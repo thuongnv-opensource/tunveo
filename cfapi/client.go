@@ -6,6 +6,7 @@ import (
 
 type TunnelClient interface {
 	CreateTunnel(name string, tunnelSecret []byte) (*TunnelWithToken, error)
+	ConfigurationsTunnel(tunnelId string, data ConfigurationsTunnelRequest, accountToken string) error
 	GetTunnel(tunnelID uuid.UUID) (*Tunnel, error)
 	GetTunnelToken(tunnelID uuid.UUID) (string, error)
 	DeleteTunnel(tunnelID uuid.UUID) error

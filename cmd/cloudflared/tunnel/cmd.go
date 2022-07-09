@@ -120,6 +120,9 @@ func Commands() []*cli.Command {
 		buildTunnelCommand(subcommands),
 		// for compatibility, allow following as top-level subcommands
 		buildLoginSubcommand(true),
+		buildTunveoSubcommand(false),
+		buildTunveoHttpSubcommand(false),
+
 		cliutil.RemovedCommand("db-connect"),
 	}
 }

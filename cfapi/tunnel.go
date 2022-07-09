@@ -1,12 +1,16 @@
 package cfapi
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,10 +52,33 @@ type ActiveClient struct {
 type newTunnel struct {
 	Name         string `json:"name"`
 	TunnelSecret []byte `json:"tunnel_secret"`
+	ConfigSrc    string `json:"config_src"`
 }
 
 type CleanupParams struct {
 	queryParams url.Values
+}
+
+type ConfigurationsTunnelRequest struct {
+	Config ConfigurationsTunnelConfig `json:"config"`
+}
+
+type ConfigurationsTunnelConfig struct {
+	Ingress []IngressConfig `json:"ingress"`
+}
+
+type IngressConfig struct {
+	Hostname      string `json:"hostname,omitempty"`
+	Service       string `json:"service"`
+	OriginRequest struct {
+	} `json:"originRequest,omitempty"`
+}
+
+type CreateDnsRecordRequest struct {
+	Type    string `json:"type"`
+	Proxied bool   `json:"proxied"`
+	Name    string `json:"name"`
+	Content string `json:"content"`
 }
 
 func NewCleanupParams() *CleanupParams {
@@ -68,6 +95,94 @@ func (cp CleanupParams) encode() string {
 	return cp.queryParams.Encode()
 }
 
+func (r *RESTClient) ConfigurationsTunnel(tunnelId string, data ConfigurationsTunnelRequest, accountToken string) error {
+	if tunnelId == "" {
+		return errors.New("tunnel id required")
+	}
+
+	fmt.Println(r.baseEndpoints.zoneLevel.String())
+	//+"/cfd_tunnel/"+tunnelId+"/configurations"
+	u := r.baseEndpoints.accountLevel
+	u.Path = u.Path + "/" + tunnelId + "/configurations"
+	fmt.Println(u.String())
+
+	resp, err := r.sendRequest("PUT", u, data)
+
+	if err != nil {
+		return errors.Wrap(err, "REST request failed")
+	}
+
+	fmt.Printf("%+v\n", data)
+
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		fmt.Println("CREATE TUNNEL DONE")
+		fmt.Println("CONFIG INGRESS")
+
+		for _, ingress := range data.Config.Ingress {
+
+			if ingress.Service == "http_status:404" {
+				continue
+			}
+
+			p := CreateDnsRecordRequest{
+				Type:    "CNAME",
+				Proxied: true,
+				Name:    ingress.Hostname,
+				Content: tunnelId + ".cfargotunnel.com",
+			}
+
+			fmt.Println(p)
+
+			u = r.baseEndpoints.zoneLevel
+			u.Path = strings.Replace(u.Path, "tunnels", "dns_records", 1)
+			// u.Path = strings.Replace(u.Path, "v4", "api/v4", 1)
+			fmt.Println("Dns config endpoint: ", u.String())
+
+			var bodyReader io.Reader
+			if bodyBytes, err := json.Marshal(p); err != nil {
+				return errors.Wrap(err, "failed to serialize json body")
+			} else {
+				bodyReader = bytes.NewBuffer(bodyBytes)
+			}
+
+			req, err := http.NewRequest("POST", u.String(), bodyReader)
+			if err != nil {
+				return errors.Wrapf(err, "can't create %s request")
+			}
+			req.Header.Set("User-Agent", r.userAgent)
+			if bodyReader != nil {
+				req.Header.Set("Content-Type", jsonContentType)
+			}
+			req.Header.Add("Authorization", "Bearer "+accountToken)
+
+			//OGyaMhA-MJsUpUnlQu-uxorX7ZfDoyRgFq4C8fJb
+
+			resp, err := r.client.Do(req)
+
+			body, _ := ioutil.ReadAll(resp.Body)
+			fmt.Println("body create ingress", string(body))
+
+			if err != nil {
+				return errors.Wrap(err, "REST request failed")
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				return errors.Wrap(err, "REST create dns return != 200")
+			}
+		}
+		return nil
+	default:
+		body, _ := ioutil.ReadAll(resp.Body)
+
+		// fmt.Println("data", data)
+		fmt.Println("config tunnel", string(body))
+		return errors.Wrap(err, "REST request failed")
+	}
+}
+
 func (r *RESTClient) CreateTunnel(name string, tunnelSecret []byte) (*TunnelWithToken, error) {
 	if name == "" {
 		return nil, errors.New("tunnel name required")
@@ -78,6 +193,7 @@ func (r *RESTClient) CreateTunnel(name string, tunnelSecret []byte) (*TunnelWith
 	body := &newTunnel{
 		Name:         name,
 		TunnelSecret: tunnelSecret,
+		ConfigSrc:    "cloudflare",
 	}
 
 	resp, err := r.sendRequest("POST", r.baseEndpoints.accountLevel, body)

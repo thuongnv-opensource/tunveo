@@ -57,6 +57,7 @@ func newSearchByID(id uuid.UUID, c *cli.Context, log *zerolog.Logger, fs fileSys
 
 func (s searchByID) Path() (string, error) {
 	originCertPath := s.c.String("origincert")
+	fmt.Println("originCertPath2", originCertPath)
 	originCertLog := s.log.With().
 		Str(LogFieldOriginCertPath, originCertPath).
 		Logger()

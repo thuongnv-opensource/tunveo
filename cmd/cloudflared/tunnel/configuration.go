@@ -53,9 +53,9 @@ var (
 func findDefaultOriginCertPath() string {
 	for _, defaultConfigDir := range config.DefaultConfigSearchDirectories() {
 		originCertPath, _ := homedir.Expand(filepath.Join(defaultConfigDir, config.DefaultCredentialFile))
-		if ok, _ := config.FileExists(originCertPath); ok {
-			return originCertPath
-		}
+		// if ok, _ := config.FileExists(originCertPath); ok {
+		return originCertPath
+		// }
 	}
 	return ""
 }

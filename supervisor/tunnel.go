@@ -665,7 +665,7 @@ func ServeQUIC(
 	errGroup.Go(func() error {
 		err := quicConn.Serve(serveCtx)
 		if err != nil {
-			connLogger.ConnAwareLogger().Err(err).Msg("Failed to serve quic connection")
+			// connLogger.ConnAwareLogger().Err(err).Msg("Failed to serve quic connection")
 		}
 		return err
 	})
