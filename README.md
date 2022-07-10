@@ -16,7 +16,12 @@ install macos
 rm -f /usr/local/bin/tunveo && curl -L https://github.com/thuongnv-opensource/tunveo/releases/download/v0.6/tunveo-darwin --output /usr/local/bin/tunveo && chmod +x /usr/local/bin/tunveo
 ```
 
-**usage**
+window
+```
+Chưa test
+```
+
+**usage example**
 ```
 tunveo http --port 3000
 ```
