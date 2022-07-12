@@ -25,5 +25,3 @@ Chưa test
 ```
 tunveo http --port 3000 # Expose localhost port 3000 to the internet
 ```
-
-<img width="1033" alt="image" src="https://user-images.githubusercontent.com/24992586/178136220-02bc412f-65fa-4cba-948e-8ae1fbbad9ca.png">
