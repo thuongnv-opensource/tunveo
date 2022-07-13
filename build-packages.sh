@@ -7,13 +7,19 @@ export CGO_ENABLED=0
 # This controls the directory the built artifacts go into
 export ARTIFACT_DIR=built_artifacts/
 mkdir -p $ARTIFACT_DIR
+
+
+rm cloudflared
+make cloudflared-darwin-amd64.tgz
+mv cloudflared  $ARTIFACT_DIR/tunveo-darwin
+
 windowsArchs=("amd64" "386")
 export TARGET_OS=windows
 for arch in ${windowsArchs[@]}; do
     export TARGET_ARCH=$arch
     make cloudflared-msi
-    mv ./cloudflared.exe $ARTIFACT_DIR/cloudflared-windows-$arch.exe
-    mv cloudflared-$VERSION-$arch.msi $ARTIFACT_DIR/cloudflared-windows-$arch.msi
+    mv ./cloudflared.exe $ARTIFACT_DIR/tunveo-windows-$arch.exe
+    mv cloudflared-$VERSION-$arch.msi $ARTIFACT_DIR/tunveo-windows-$arch.msi
 done
 
 
@@ -30,7 +36,7 @@ for arch in ${linuxArchs[@]}; do
     fi
     
     make cloudflared-deb
-    mv cloudflared\_$VERSION\_$arch.deb $ARTIFACT_DIR/cloudflared-linux-$arch.deb
+    mv cloudflared\_$VERSION\_$arch.deb $ARTIFACT_DIR/tunveo-linux-$arch.deb
 
     # rpm packages invert the - and _ and use x86_64 instead of amd64.
     RPMVERSION=$(echo $VERSION|sed -r 's/-/_/g')
@@ -42,8 +48,9 @@ for arch in ${linuxArchs[@]}; do
         RPMARCH="aarch64"
     fi
     make cloudflared-rpm
-    mv cloudflared-$RPMVERSION-1.$RPMARCH.rpm $ARTIFACT_DIR/cloudflared-linux-$RPMARCH.rpm
+    mv cloudflared-$RPMVERSION-1.$RPMARCH.rpm $ARTIFACT_DIR/tunveo-linux-$RPMARCH.rpm
 
     # finally move the linux binary as well.
-    mv ./cloudflared $ARTIFACT_DIR/cloudflared-linux-$arch
+    mv ./cloudflared $ARTIFACT_DIR/tunveo-linux-$arch
 done
+

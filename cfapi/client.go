@@ -12,6 +12,8 @@ type TunnelClient interface {
 	DeleteTunnel(tunnelID uuid.UUID) error
 	ListTunnels(filter *TunnelFilter) ([]*Tunnel, error)
 	ListActiveClients(tunnelID uuid.UUID) ([]*ActiveClient, error)
+	ListDnsRecord(accountToken string) ([]*DnsRecord, error)
+	DeleteDnsRecord(dnsID string, accountToken string) error
 	CleanupConnections(tunnelID uuid.UUID, params *CleanupParams) error
 }
 

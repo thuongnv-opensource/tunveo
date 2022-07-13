@@ -158,8 +158,6 @@ func (r *RESTClient) ConfigurationsTunnel(tunnelId string, data ConfigurationsTu
 			}
 			req.Header.Add("Authorization", "Bearer "+accountToken)
 
-			//OGyaMhA-MJsUpUnlQu-uxorX7ZfDoyRgFq4C8fJb
-
 			resp, err := r.client.Do(req)
 
 			body, _ := ioutil.ReadAll(resp.Body)
@@ -181,6 +179,89 @@ func (r *RESTClient) ConfigurationsTunnel(tunnelId string, data ConfigurationsTu
 		fmt.Println("config tunnel", string(body))
 		return errors.Wrap(err, "REST request failed")
 	}
+}
+
+type DnsRecord struct {
+	ID        string `json:"id"`
+	ZoneID    string `json:"zone_id"`
+	ZoneName  string `json:"zone_name"`
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	Content   string `json:"content"`
+	Proxiable bool   `json:"proxiable"`
+	Proxied   bool   `json:"proxied"`
+	TTL       int    `json:"ttl"`
+	Locked    bool   `json:"locked"`
+	Meta      struct {
+		AutoAdded           bool   `json:"auto_added"`
+		ManagedByApps       bool   `json:"managed_by_apps"`
+		ManagedByArgoTunnel bool   `json:"managed_by_argo_tunnel"`
+		Source              string `json:"source"`
+	} `json:"meta"`
+	CreatedOn  time.Time `json:"created_on"`
+	ModifiedOn time.Time `json:"modified_on"`
+}
+
+func (r *RESTClient) ListDnsRecord(accountToken string) ([]*DnsRecord, error) {
+	u := r.baseEndpoints.zoneLevel
+	u.Path = strings.Replace(u.Path, "tunnels", "dns_records", 1)
+	// u.Path = strings.Replace(u.Path, "v4", "api/v4", 1)
+	fmt.Println("Dns config endpoint: ", u.String())
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "can't create %s request")
+	}
+	req.Header.Set("User-Agent", r.userAgent)
+	req.Header.Add("Authorization", "Bearer "+accountToken)
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "REST request failed")
+	}
+	defer resp.Body.Close()
+
+	// rr, _ := ioutil.ReadAll(resp.Body)
+	// fmt.Println("r", string(rr))
+
+	if resp.StatusCode == http.StatusOK {
+		return parseListTunnelDnsRespRecords(resp.Body)
+	}
+
+	return nil, r.statusCodeToError("list tunnels dns", resp)
+}
+
+func (r *RESTClient) DeleteDnsRecord(dnsID string, accountToken string) error {
+	u := r.baseEndpoints.zoneLevel
+	u.Path = strings.Replace(u.Path, "tunnels", "dns_records", 1) + "/" + dnsID
+
+	req, err := http.NewRequest("DELETE", u.String(), nil)
+	if err != nil {
+		return errors.Wrapf(err, "can't create %s request")
+	}
+	req.Header.Set("User-Agent", r.userAgent)
+	req.Header.Add("Authorization", "Bearer "+accountToken)
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "REST request failed")
+	}
+	defer resp.Body.Close()
+
+	// rr, _ := ioutil.ReadAll(resp.Body)
+	// fmt.Println("r", string(rr))
+
+	if resp.StatusCode == http.StatusOK {
+		return nil
+	}
+
+	return r.statusCodeToError("delete dns record", resp)
+}
+
+func parseListTunnelDnsRespRecords(body io.ReadCloser) ([]*DnsRecord, error) {
+	var dns []*DnsRecord
+	err := parseResponse(body, &dns)
+	return dns, err
 }
 
 func (r *RESTClient) CreateTunnel(name string, tunnelSecret []byte) (*TunnelWithToken, error) {

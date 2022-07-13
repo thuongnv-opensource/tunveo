@@ -203,8 +203,6 @@ cloudflared-msi: cloudflared
 
 .PHONY: cloudflared-darwin-amd64.tgz
 cloudflared-darwin-amd64.tgz: cloudflared
-	tar czf cloudflared-darwin-amd64.tgz cloudflared
-	rm cloudflared
 
 .PHONY: cloudflared-junos
 cloudflared-junos: cloudflared jetez-certificate.pem jetez-key.pem
